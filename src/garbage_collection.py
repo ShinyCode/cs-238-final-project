@@ -15,7 +15,7 @@ class GarbageCollectionEnv(object):
     def __init__(self, m_max, usage_pattern):
         self.m_max = m_max
         self.usage_pattern = usage_pattern
-        self._reset()
+        self._reset(m_max, usage_pattern)
         self.a_space = set([GC, NGC])
 
     # return (sp, r, done)
@@ -25,6 +25,7 @@ class GarbageCollectionEnv(object):
         r = self._reward(self.s, a)
         done = ip == len(self.usage_pattern)
         self.i = ip
+        self.s = sp
         return (sp, r, done)
 
     def _seed(self, seed=None):
@@ -34,13 +35,16 @@ class GarbageCollectionEnv(object):
         sp = None
         ip = None
         if a == GC:
-            sp = (self.m_max, self.m_max) # TODO: CHANGE THIS
-            ip = self.i + 1
+            sp = (self.m_max - self.usage_pattern[self.i], -self.usage_pattern[self.i]) # TODO: CHANGE THIS
+            if self.m_max - self.usage_pattern[self.i] >= 0: # We have enough memory to do the malloc
+                ip = self.i + 1
+            else:
+                ip = self.i
         elif a == NGC:
             if s[0] - self.usage_pattern[self.i] >= 0: # We have enough memory
                 sp = (s[0] - self.usage_pattern[self.i], -self.usage_pattern[self.i]) # WANT TO ADVANCE self.i
                 ip = self.i + 1
-            else if s[0] >= 0: # We are about to run out of memory
+            elif s[0] >= 0: # We are about to run out of memory
                 sp = (s[0] - self.usage_pattern[self.i], -self.usage_pattern[self.i]) # Don't want to advance self.i
                 ip = self.i
             else: # We still don't have enough memory, i.e. s[0] < 0
