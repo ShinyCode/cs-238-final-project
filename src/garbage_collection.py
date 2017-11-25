@@ -35,7 +35,7 @@ class GarbageCollectionEnv(object):
         sp = None
         ip = None
         if a == GC:
-            sp = (self.m_max - self.usage_pattern[self.i], -self.usage_pattern[self.i]) # TODO: CHANGE THIS
+            sp = (self.m_max - self.usage_pattern[self.i], -self.usage_pattern[self.i])
             if self.m_max - self.usage_pattern[self.i] >= 0: # We have enough memory to do the malloc
                 ip = self.i + 1
             else:
