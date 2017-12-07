@@ -8,8 +8,9 @@ REWARD_PASS = 0
 REWARD_GC = -10
 REWARD_OOM = -500
 
-class GarbageCollectionEnv(object):
+STATE_OOM = -1
 
+class GarbageCollectionEnv(object):
     # m_max is total amount of memory available
     # usage_patern is a list of "malloc" amounts
     def __init__(self, m_max, usage_pattern):
@@ -17,6 +18,12 @@ class GarbageCollectionEnv(object):
         self.usage_pattern = usage_pattern
         self._reset(m_max, usage_pattern)
         self.a_space = set([GC, NGC])
+
+    def _na(self):
+        return len(self.a_space)
+
+    def _ns(self):
+        return self.m_max + 2
 
     # return (sp, r, done)
     def _step(self, a):
@@ -35,39 +42,46 @@ class GarbageCollectionEnv(object):
         sp = None
         ip = None
         if a == GC:
-            sp = (self.m_max - self.usage_pattern[self.i], -self.usage_pattern[self.i])
-            if self.m_max - self.usage_pattern[self.i] >= 0: # We have enough memory to do the malloc
+            sp = self.m_max - self.usage_pattern[self.i]
+            if sp >= 0: # We have enough memory to do the malloc
                 ip = self.i + 1
             else:
                 ip = self.i
+                sp = STATE_OOM
         elif a == NGC:
-            if s[0] - self.usage_pattern[self.i] >= 0: # We have enough memory
-                sp = (s[0] - self.usage_pattern[self.i], -self.usage_pattern[self.i]) # WANT TO ADVANCE self.i
+            if s - self.usage_pattern[self.i] >= 0: # We have enough memory
+                sp = s - self.usage_pattern[self.i] # WANT TO ADVANCE self.i
                 ip = self.i + 1
-            elif s[0] >= 0: # We are about to run out of memory
-                sp = (s[0] - self.usage_pattern[self.i], -self.usage_pattern[self.i]) # Don't want to advance self.i
+            elif s >= 0: # We are about to run out of memory
+                sp = STATE_OOM # Don't want to advance self.i
                 ip = self.i
             else: # We still don't have enough memory, i.e. s[0] < 0
                 sp = s # Don't want to advance self.i
                 ip = self.i
         return (sp, ip)
 
-
     def _reward(self, s, a):
-        m_cur, m_change = s
+        m_cur = s
         if a == GC:
             return REWARD_GC
         if a == NGC:
-            if s[0] - self.usage_pattern[self.i] >= 0: # We have enough memory
+            if s - self.usage_pattern[self.i] >= 0: # We have enough memory
                 return REWARD_PASS
             else: # Not enough memory
                 return REWARD_OOM
-
 
     def _reset(self, m_max=None, usage_pattern=None):
         if m_max is not None:
             self.m_max = m_max
         if usage_pattern is not None:
             self.usage_pattern = usage_pattern
-        self.s = (m_max, 0)
+        self.s = self.m_max
         self.i = 0
+        return self.s
+
+    # Given a state, outputs an index in the range [0, self._ns)
+    def _s2i(self, s):
+        return s + 1
+
+    def _i2s(self, i):
+        return i - 1
