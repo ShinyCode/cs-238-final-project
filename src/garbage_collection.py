@@ -1,3 +1,7 @@
+'''
+Garbage Collection MDP v1
+State representation: (m_left), with m_left = -1 as a sentinel for being out of memory
+'''
 import numpy as np
 import sys
 
@@ -35,9 +39,6 @@ class GarbageCollectionEnv(object):
         self.s = sp
         return (sp, r, done)
 
-    def _seed(self, seed=None):
-        pass
-
     def _next(self, s, a):
         sp = None
         ip = None
@@ -52,16 +53,12 @@ class GarbageCollectionEnv(object):
             if s - self.usage_pattern[self.i] >= 0: # We have enough memory
                 sp = s - self.usage_pattern[self.i] # WANT TO ADVANCE self.i
                 ip = self.i + 1
-            elif s >= 0: # We are about to run out of memory
+            else: # We are about to run out of memory
                 sp = STATE_OOM # Don't want to advance self.i
-                ip = self.i
-            else: # We still don't have enough memory, i.e. s[0] < 0
-                sp = s # Don't want to advance self.i
                 ip = self.i
         return (sp, ip)
 
     def _reward(self, s, a):
-        m_cur = s
         if a == GC:
             return REWARD_GC
         if a == NGC:

@@ -44,7 +44,11 @@ def sarsa(env, num_episodes=2000, gamma=0.999, alpha=0.2, epsilon=0.8, decay_rat
 
 def back_out_policy(Q, states_seen, env):
     states_seen = sorted(list(states_seen))
-    policy = np.argmax(Q[states_seen], axis=1)
-    policy = np.reshape(policy, (len(policy), 1))
-    states_seen = np.reshape(states_seen, (len(states_seen), 1))
-    return np.concatenate((env._i2s(states_seen), policy), axis=1)
+    actions = list(np.argmax(Q[states_seen], axis=1))
+    policy = {}
+    for s, a in zip(states_seen, actions):
+        policy[env._i2s(s)] = a
+    return policy
+    # policy = np.reshape(policy, (len(policy), 1))
+    # states_seen = np.reshape(states_seen, (len(states_seen), 1))
+    # return np.concatenate((env._i2s(states_seen), policy), axis=1)
