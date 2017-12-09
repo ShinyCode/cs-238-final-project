@@ -40,7 +40,7 @@ class GarbageCollectionEnv(object):
     def _step(self, a):
         assert a in self.a_space
         sp, ip, r = self._next(self.s, a)
-        done = ip == len(self.usage_pattern)
+        done = ip == len(self.usage_pattern) or r <= k.REWARD_OOM
         self.i = ip
         self.s = sp
         return (sp, r, done)

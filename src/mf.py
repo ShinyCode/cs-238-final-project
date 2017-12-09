@@ -16,6 +16,14 @@ def q_learning(env, num_episodes=10000, gamma=0.999, alpha=0.2, epsilon=0.9, dec
     Q = np.ones((env._ns(), env._na()))
     rewards = []
     states_seen = set()
+    rl_params = {}
+    rl_params['num_episodes'] = num_episodes
+    rl_params['gamma'] = gamma
+    rl_params['alpha'] = alpha
+    rl_params['epsilon'] = epsilon
+    rl_params['decay_rate'] = decay_rate
+    rl_params['tolerance'] = tolerance
+    rl_params['max_steps'] = max_steps
     for iepisode in xrange(num_episodes):
         Qprev = copy.deepcopy(Q)
         history = []
@@ -32,7 +40,7 @@ def q_learning(env, num_episodes=10000, gamma=0.999, alpha=0.2, epsilon=0.9, dec
             cum_reward += r
             history.append((s, a, r, sp, done))
             s = sp
-        rewards.append(cum_reward)
+        rewards.append((cum_reward, iepisode))
         for s, a, r, sp, done in reversed(history):
             if not done:
                 Q[s, a] += alpha * (r + gamma * np.max(Q[sp, :]) - Q[s, a])
@@ -43,7 +51,7 @@ def q_learning(env, num_episodes=10000, gamma=0.999, alpha=0.2, epsilon=0.9, dec
         epsilon *= decay_rate
         if dQ < tolerance:
             break
-    return Q, states_seen
+    return Q, states_seen, rewards, rl_params
 
 # SARSA
 def sarsa(env, num_episodes=2000, gamma=0.999, alpha=0.2, epsilon=0.8, decay_rate=0.995):

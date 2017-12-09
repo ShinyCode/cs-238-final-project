@@ -20,7 +20,7 @@ class Allocator(object):
             if block[1] != k.FREE or block[0] < m: # Either not free, or not big enough
                 continue
             old_block = self.heap[i]
-            self.heap[i] = (old_block[0] - m, k.FREE)
+            self.heap[i] = (old_block[0] - m, k.FREE) # TODO: Just saying, could be 0
             self.heap.insert(i, (m, k.INUSE))
             return True
         return False
