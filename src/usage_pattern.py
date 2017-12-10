@@ -1,3 +1,8 @@
+'''
+file: usage_pattern.py
+--------------------------------------------------------------------------------
+Generates various usage patterns for use in a GarbageCollectionEnv.
+'''
 import numpy as np
 
 def usage_pattern_flat(length, level):

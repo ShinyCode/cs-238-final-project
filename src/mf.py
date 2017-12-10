@@ -1,8 +1,12 @@
+'''
+file: mf.py
+--------------------------------------------------------------------------------
+Provides model-free RL methods, as well as utility functions to back out policies.
+'''
 import numpy as np
 import random
 import copy
 
-# Return GC or NGC
 def epsilon_greedy(s, Q, epsilon, a_space):
     if np.random.uniform(0, 1) < epsilon:
         return random.sample(range(len(a_space)), 1)[0]
@@ -11,8 +15,7 @@ def epsilon_greedy(s, Q, epsilon, a_space):
 def print_info(iepisode, steps, cum_reward, epsilon, dQ):
     print "Episode %d:\t steps = %d\tcum_reward = %f\tepsilon = %f\tdQ = %f" % (iepisode, steps, cum_reward, epsilon, dQ)
 
-# Q-learning
-def q_learning(env, num_episodes=10000, gamma=0.999, alpha=0.2, epsilon=0.9, decay_rate=0.995, tolerance=1e-2, max_steps=100):
+def q_learning(env, num_episodes=5000, gamma=0.999, alpha=0.2, epsilon=0.9999, decay_rate=0.995, tolerance=1e-5, max_steps=1000):
     Q = np.ones((env._ns(), env._na()))
     rewards = []
     states_seen = set()
@@ -53,7 +56,6 @@ def q_learning(env, num_episodes=10000, gamma=0.999, alpha=0.2, epsilon=0.9, dec
             break
     return Q, states_seen, rewards, rl_params
 
-# SARSA
 def sarsa(env, num_episodes=2000, gamma=0.999, alpha=0.2, epsilon=0.8, decay_rate=0.995):
     Q = np.ones((env._ns(), env._na()))
     rewards = []
@@ -65,7 +67,7 @@ def sarsa(env, num_episodes=2000, gamma=0.999, alpha=0.2, epsilon=0.8, decay_rat
         curr_s = env._s2i(env._reset())
         curr_a = epsilon_greedy(curr_s, Q, epsilon, env.a_space)
         while not done:
-            states_seen.add(curr_s)
+            indices_seen.add(curr_s)
             next_s, r, done = env._step(curr_a)
             next_s = env._s2i(next_s)
             cum_reward += r
@@ -82,15 +84,78 @@ def sarsa(env, num_episodes=2000, gamma=0.999, alpha=0.2, epsilon=0.8, decay_rat
                 Q[curr_s, curr_a] = Q[curr_s, curr_a] + alpha * (r + gamma * Q[next_s,next_a] - Q[curr_s, curr_a])
             else:
                 Q[curr_s, curr_a] = Q[curr_s, curr_a] + alpha * (r  - Q[curr_s, curr_a])
-    return Q, states_seen
+    return Q, indices_seen
 
-def back_out_policy(Q, states_seen, env):
-    states_seen = sorted(list(states_seen))
-    actions = list(np.argmax(Q[states_seen], axis=1))
+def back_out_policy(Q, indices_seen, env):
+    indices_seen = sorted(list(indices_seen))
+    actions = list(np.argmax(Q[indices_seen], axis=1))
     policy = {}
-    for s, a in zip(states_seen, actions):
+    for s, a in zip(indices_seen, actions):
         policy[env._i2s(s)] = a
     return policy
-    # policy = np.reshape(policy, (len(policy), 1))
-    # states_seen = np.reshape(states_seen, (len(states_seen), 1))
-    # return np.concatenate((env._i2s(states_seen), policy), axis=1)
+
+def nearest_neighbor_1d(s, states_seen):
+    closest_distance = float('inf')
+    closest_neighbor = None
+    for state in states_seen:
+        dist = abs(state[0] - s[0])
+        if dist < closest_distance:
+            closest_distance = dist
+            closest_neighbor = state
+    return closest_neighbor
+
+def nearest_neighbor_2d(s, states_seen):
+    closest_distance = float('inf')
+    closest_neighbor = None
+    for state in states_seen:
+        dist = (state[0] - s[0]) ** 2 + (state[1] - s[1]) ** 2
+        if (dist < closest_distance):
+            closest_distance = dist
+            closest_neighbor = state
+    return closest_neighbor
+
+def fill_policy(Q, indices_seen, env, policy):
+    states_seen = convert_i2s(indices_seen, env)
+    s_space_dims = env.s_space
+    if len(s_space_dims) == 1:
+        for i in s_space_dims[0]:
+            if (i,) not in states_seen:
+                neighbor = nearest_neighbor_1d((i,), states_seen)
+                policy[(i,)] = policy[neighbor]
+    elif len(s_space_dims) == 2:
+        for i in s_space_dims[0]:
+            for j in s_space_dims[1]:
+                if (i, j) not in states_seen:
+                    neighbor = nearest_neighbor_2d((i, j), states_seen)
+                    policy[(i, j)] = policy[neighbor]
+    return policy
+
+def convert_i2s(indices_seen, env):
+    states_seen = []
+    for i in indices_seen:
+        states_seen.append(env._i2s(i))
+    return set(states_seen)
+
+def render_single_episode(env, policy):
+    episode_penalty = 0
+    state = env._reset()
+    done = False
+    while not done:
+        action = policy[state]
+        state, penalty, done = env._step(action)
+        episode_penalty += penalty
+    assert done
+    return episode_penalty
+
+def evaluate_performance(env, num_trials=5, num_episodes=10):
+    avg_penalty = []
+    for trial_i in xrange(num_trials):
+        Q, indices_seen, _, _ = q_learning(env)
+        policy = back_out_policy(Q, indices_seen, env)
+        policy = fill_policy(Q, indices_seen, env, policy)
+        penalty_list = []
+        for episode_i in xrange(num_episodes):
+            episode_penalty = render_single_episode(env, policy)
+            penalty_list.append(episode_penalty)
+        avg_penalty.append(np.mean(penalty_list))
+    return avg_penalty

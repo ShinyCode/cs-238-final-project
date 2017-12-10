@@ -1,3 +1,8 @@
+'''
+file: allocator.py
+--------------------------------------------------------------------------------
+Models a simple allocator that can be used in a garbage collection environment.
+'''
 import numpy as np
 import sys
 import constants as k

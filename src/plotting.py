@@ -1,3 +1,8 @@
+'''
+file: plotting.py
+--------------------------------------------------------------------------------
+Various utility functions for plotting.
+'''
 import matplotlib.pyplot as plt
 import numpy as np
 import os

@@ -1,5 +1,7 @@
 '''
-Garbage Collection MDP Base
+file: garbage_collection.py
+--------------------------------------------------------------------------------
+Implementation of a garbage collection MDP for use with mf.py.
 '''
 import numpy as np
 import allocator as ac
@@ -7,8 +9,6 @@ import sys
 import constants as k
 
 class GarbageCollectionEnv(object):
-    # m_max is total amount of memory available
-    # usage_patern is a list of "malloc" amounts
     # env = GarbageCollectionEnv(m_max, usage_pattern, [a0, a1,...], [[s_a0, s_a1,...], [s_b0, s_b1,...],...])
     def __init__(self, m_max, usage_pattern, a_space, s_space):
         print self._name()
@@ -36,7 +36,6 @@ class GarbageCollectionEnv(object):
         raise NotImplementedError
         return 'no name!'
 
-    # return (sp, r, done)
     def _step(self, a):
         assert a in self.a_space
         sp, ip, r = self._next(self.s, a)
@@ -62,7 +61,6 @@ class GarbageCollectionEnv(object):
         self.i = 0
         return self.s
 
-    # Given a state, outputs an index in the range [0, self._ns)
     def _init_lookup(self):
         s2i = {}
         i2s = {}

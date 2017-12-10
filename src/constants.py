@@ -1,4 +1,8 @@
-
+'''
+file: constants.py
+--------------------------------------------------------------------------------
+Various constants used by the garbage collection MDP.
+'''
 FRAG_STEPS = 20
 GC_PROB = 1
 
